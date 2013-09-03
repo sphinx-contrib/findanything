@@ -6,18 +6,27 @@ from sphinx.util.pycompat import any, b
 from docutils.readers.doctree import Reader as DoctreeReader
 import sys, re, os, json
 
-def setup_fuzzyfind_script(app):
-    app.builder.script_files += [ '_static/%s' % s for s in [
-        'jquery.cursor.min.js', 'jquery.keymap.min.js', 
-        'jquery.simplemodal.1.4.3.min.js', 'jquery.fuzzyfind.min.js',
-        'index_fuzzyfind.js'
-    ] ]
-    app.builder.css_files += ['_static/fuzzyfind.css']
-
-
 def env_updated(app, env):
     config = app.builder.config
-    toc = env.get_toctree_for(config.master_doc, app.builder, False)
+
+    doctree = env.get_doctree(config.master_doc)
+    from sphinx import addnodes
+
+    toctrees = []
+    for toctreenode in doctree.traverse(addnodes.toctree):
+        toctree = env.resolve_toctree(config.master_doc, app.builder, 
+            toctreenode, prune = False, includehidden = True, maxdepth = 0,
+            collapse = False)
+        toctrees.append(toctree)
+
+    if not toctrees:
+        toc = None
+    else:
+        toc = toctrees[0]
+        for toctree in toctrees[1:]:
+            toc.extend(toctree.children)
+
+    # toc = env.get_toctree_for(config.master_doc, app.builder, False)
 
     node = toc
 
